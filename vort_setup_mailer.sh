@@ -284,7 +284,7 @@ EOF
     sleep \$(awk -v min=0.3 -v max=0.8 'BEGIN{srand(); print min+rand()*(max-min)}')
     
     # Progress indicator
-    echo "[$SUCCESS/$TOTAL] Sent to \$CLEAN_EMAIL"
+    echo "[\$SUCCESS/\$TOTAL] Sent to \$CLEAN_EMAIL"
     
 done < "\$EMAIL_LIST"
 
